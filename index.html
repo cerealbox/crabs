@@ -1,0 +1,201 @@
+<html>
+  <head>
+    <link href="ace/style.css" rel="stylesheet" type="text/css">
+    <title>Coffee Code editor</title>
+  </head>
+
+   <!--
+    http://sharejs.org/
+    http://sharejs.org:8000/
+   -->
+
+  <body>
+    <div id="header">
+      <div id="htext">
+        <div id="error" style="display:none;"></div>
+        Editing <b id='docname'>...</b>
+      </div>
+
+    </div>
+
+    <!-- <div id="console_wrap" style="position:absolute;z-index:1000;top:30;left:620;overflow:auto;height:800px;width:660px;outline:0" tabindex="-1"><pre id="console" style="color:white">console debug output here.</pre></div> -->
+    <div id="repl_results_wrap" style="position:absolute;z-index:1000;top:30;left:620;overflow:auto;height:800px;width:660px;outline:0" tabindex="-1"><pre id="repl_results" style="color:white">javascript code here.</pre></div>
+
+    <div id="javascript" style="color:red;position:absolute;z-index:1000;top:0;left:500" title="show/hide javascript">javascript</div>    
+    <div id="run" class="minibutton dark run" style="color:red;position:absolute;z-index:1000;top:0;left:580" title="Ctrl-Enter">Run</div>
+    <div id="debug" class="minibutton dark run" style="color:red;position:absolute;z-index:1000;top:0;left:620" title="no keyboard combo yet.">Debug</div>
+
+    <div id="editor">Loading...</div>
+    <script src="/lib/ace/ace.js"></script>
+    <script src="/lib/ace/mode-coffee.js"></script>
+    <script src="/lib/ace/theme-idle_fingers.js"></script>
+    <!-- <script src="/socket.io/socket.io.js"></script> -->
+    <script src="/channel/bcsocket.js"></script>    
+    <script src="/share/share.js"></script>
+    <script src="/share/ace.js"></script>
+
+    <script>
+    
+// Read a page's GET URL variables and return them as an associative array.
+function getUrlVars() {
+    var vars = [], hash;
+    var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+    for(var i = 0; i < hashes.length; i++) {
+        hash = hashes[i].split('=');
+        vars.push(hash[0]);
+        vars[hash[0]] = hash[1];
+    }
+    return vars;
+}
+    </script>
+   
+    <script>
+
+window.onload = function() {
+  var editor = ace.edit("editor");
+  window.editor = editor
+
+  editor.setReadOnly(true);
+  editor.getSession().setUseSoftTabs(true);
+  editor.getSession().setTabSize(2);
+  editor.getSession().setMode(new (require("ace/mode/coffee").Mode));
+  editor.setTheme("ace/theme/idle_fingers");
+
+  if (!document.location.hash) {
+    //document.location.hash = '#' + "3Yx-KJNohI" + "parsercombinator.coffee"
+    //document.location.hash = '#' + "3Yx-KJNohI" + getUrlVars()['file']
+    document.location.hash = '#' + "bugs"
+  }
+  //var docName = "code:" + document.location.hash.slice(1);
+  var docName = document.location.hash.slice(1);  
+
+  var span = document.getElementById('docname').innerText = docName;
+
+  //sharejs.open(docName, 'text', function(error, doc) {
+  sharejs.open('hello', 'text', 'http://cocktailsonbarb.dyndns.org:8000/channel', function(error, doc) {
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    //if (doc.created) {
+    //  doc.insert(0, "# Coffeescript editor!\n\nexports.foo = ->\n  console.log 'hi!'");
+    //}
+
+    doc.attach_ace(editor);
+    editor.setReadOnly(false);
+    
+    //@TODO:
+    //doc.onchange should compile JS...
+    //^-- weither this runs should be alterable by an html button.  then you could work on an old version of the file as long as you stoped accepting changes before the file was changed.
+  	//is every sharejs change a git commit?
+    //wrap coffeescript when javascript is displayed..
+    //or, the javascript window should also be an ace' text editor and the 'javascript' button should toggle between them.
+	//html button to toggle full or split as well as button to controll which language.
+    //bracket highlightning... (https://github.com/ajaxorg/ace/pull/451)
+    //console debug window?
+    //detect disconnect from server.
+    //show cursour positions of other people.
+    //show highlights of other people.
+    //this file should be availible at websocket: http://sharejs.org:8000/sjs/code:3Yx-KJNohIindex.html
+	//...and editor: http://sharejs.org/code.html#3Yx-KJNohIindex.html
+	//javascript code should be converted to coffeescript code.
+	//use sharejs's method for file selection: 'edit.html#test.coffee' instead of 'edit.html?file=test.coffee'
+    
+    //console.log(doc.snapshot)
+    window.doc = doc
+    //compileSource()    
+  });
+};
+    </script>
+    
+    
+    <script type="text/coffeescript"> 
+#resize javascript area to browser size:
+$('#repl_results_wrap').css("height", $(window).height() - 45)
+$('#repl_results_wrap').css("width", $(window).width() - 620)
+$(window).resize (e) ->
+  $('#repl_results_wrap').css("height", $(window).height() - 45)
+  $('#repl_results_wrap').css("width", $(window).width() - 620)
+
+sourceFragment = "try:"
+
+# Set up the compilation function, to run when you stop typing.
+compileSource = ->
+  source = window.doc.snapshot #source = $('#repl_source').val()
+  window.compiledJS = ''
+  try
+    window.compiledJS = CoffeeScript.compile source, bare: on
+    el = $('#repl_results')[0]
+    if el.innerText
+      el.innerText = window.compiledJS
+    else
+      $(el).text window.compiledJS
+    $('#error').hide()
+  catch error
+    $('#error').text(error.message).show()
+
+  # Update permalink
+  #$('#repl_permalink').attr 'href', "##{sourceFragment}#{encodeURIComponent source}"
+
+# Listen for keypresses and recompile.
+$('#editor').keyup -> compileSource()
+
+# Eval the compiled js.
+evalJS = ->
+  try
+    eval window.compiledJS
+  catch error then alert error
+
+$('#run').click -> (evalJS(); focustoggle())
+
+$('#debug').click ->
+    header = 'data:text/html;charset=utf-8,'
+    html = "
+        <html>
+        <head>
+        #{ "<scr" + "ipt>\n" }
+        debugger;
+        #{ window.compiledJS }
+        #{ "</scr" + "ipt>" }
+        </head>
+        <body></body>
+        </html>
+    "
+    window.open (header + escape html), "debug"
+
+#toggle cursor focus when switching between coffeescript and javascript:
+focustoggle = ->
+  if $('#repl_results_wrap').is(":visible")
+     $('#repl_results_wrap').focus()
+  else
+    window.editor.focus()
+     
+$('#javascript').click (e) ->
+    $('#repl_results_wrap').toggle()
+    focustoggle()
+
+# Trigger Run button on Ctrl-Enter
+$(document.body)
+  .keydown (e) ->
+    ($('#repl_results_wrap').toggle(); focustoggle()) if e.which == 27
+    evalJS() if e.which == 13 and (e.metaKey or e.ctrlKey) #and $('.minibutton.run:visible').length
+
+# If source code is included in location.hash, display it.
+#hash = decodeURIComponent location.hash.replace(/^#/, '')
+#if hash.indexOf(sourceFragment) == 0
+#    src = hash.substr sourceFragment.length
+#    loadConsole src
+
+#window.doc.on 'change', (op) ->
+#  #console.log('Version: ' + doc.version);
+#  compileSource()
+#)
+    </script> 
+     
+    <script src="jquery/jquery-1.6.4.js"></script>
+    <script src="coffee/coffee-script.js"></script>
+     
+    </body>
+</html>  
+

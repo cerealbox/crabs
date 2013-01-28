@@ -1,0 +1,30 @@
+<html>
+  <head>
+    <title>code editor editor</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/share/share.js"></script>
+    <script src="jquery/jquery-1.6.4.js"></script>
+  </head>
+  <script>
+    window.onload = function() {
+
+      if (!document.location.hash) {
+        document.location.hash = '#' + "index.html"
+      }
+      var docName = "code:" + "3Yx-KJNohI" + document.location.hash.slice(1)
+        
+      sharejs.open(docName, 'text', 'http://sharejs.org:8000/sjs', function(error, doc) {
+        if (error) {
+          console.error(error)
+          return
+        } else {
+            console.log(doc.snapshot)
+            //$('html').empty()
+            //$('html').html(doc.snapshot)
+            $('html').load("edit.py", doc.snapshot)
+        }
+      })
+    }
+  </script>
+</html>  
+

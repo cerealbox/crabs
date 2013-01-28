@@ -1,0 +1,74 @@
+<html>
+	<head>
+		<style type="text/css" media="screen">
+			body {
+				overflow: hidden;
+			}
+			
+			#editor { 
+				margin: 0;
+				position: absolute;
+				top: 0;
+				bottom: 0;
+				left: 0;
+				right: 0;
+			}
+		</style>
+		<title>Pad</title>
+	</head>
+
+	<body>
+    <div id="editor">Connecting...</div>
+
+    <script src="/lib/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+    <!-- <script src="/channel/bcsocket.js"></script> -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/share/share.js"></script>
+    <script src="/share/ace.js"></script>
+    <script src="/lib/ace/theme-idle_fingers.js"></script>        
+    <script>
+
+    window.onload = function() {
+
+		var docName = document.location.hash.slice(1);
+
+        if (!docName) {
+            //--------------------DOCUMENT LIST--------------------
+            document.getElementById("editor").innerHTML = "\
+                <a href='pad.html?a=1#notes'>notes</a><br />\
+                <a href='pad.html?a=1#bugs'>bugs</a><br />\
+            "
+        } else {
+
+            var editor = ace.edit("editor");
+            // https://github.com/ajaxorg/ace/wiki/Embedding---API
+            editor.setReadOnly(true);
+            editor.setTheme("ace/theme/idle_fingers");
+            editor.setHighlightActiveLine(false);
+            editor.setShowPrintMargin(false);            
+            //editor.getSession().setUseWrapMode(true); //enable word-wrap.
+            
+            
+
+            //sharejs.open(docName, 'text', 'http://localhost:8000/channel', function(error, doc) { //for channel/bcsocket.js
+            //sharejs.open(docName, 'text', 'http://localhost:8000/sjs', function(error, doc) { //for socket.io/socket.io.js
+            sharejs.open(docName, 'text', function(error, doc) {
+                if (error) {
+                    console.error(error);
+                    return;
+                }
+
+                if (doc.created) {
+                    doc.submitOp({i:'new document created.'});
+                }
+
+                doc.attach_ace(editor);
+                editor.setReadOnly(false);
+            });
+        }
+    };
+
+	</script>
+	</body>
+
+</html>	

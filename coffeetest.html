@@ -1,0 +1,30 @@
+<html><body>
+<script src="http://sharejs.org:8000/socket.io/socket.io.js"></script>
+<script src="http://sharejs.org:8000/share/share.js"></script>
+<script>
+var d
+window.onload = function() {
+  console.log("oepinging.")
+  sharejs.open('039485723947', 'text', 'http://sharejs.org:8000/sjs', function(error, doc) {
+    if (error) {
+      console.log(error);
+      return;
+    }
+
+    console.log("opened?")
+    console.log(doc.snapshot)
+    d = doc
+    
+    doc.on('change', function(op) {
+        console.log('Version: ' + doc.version);
+    });
+ 
+    if (doc.created) {
+      doc.insert(0, "# Coffeescript editor!\n\nexports.foo = ->\n  console.log 'hi!'");
+    }
+ 
+  });
+}
+</script>
+
+</body></html>
